@@ -8,14 +8,14 @@ from selenium.webdriver.common.keys import Keys
 import threading
 import random
 import pyautogui
-import time
+from datetime import datetime
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Database Configuration
 DB_CONN = psycopg2.connect(
-    dbname="shield", user="username", password="password", host="localhost", port="5432")
+    dbname="shield", user="pranay", password="1234", host="localhost", port="5432")
 DB_CURSOR = DB_CONN.cursor()
 
 # Improved Database Schema
@@ -82,16 +82,30 @@ def get_logs():
 
 @socketio.on('log_event')
 def handle_event(data):
-    DB_CURSOR.execute("INSERT INTO event_logs (timestamp, event_type, details) VALUES (%s, %s, %s)",
-                      (time.time(), data["event"], str(data.get("details", None))))
-    DB_CONN.commit()
-    print("Logged Event:", data)
+    try:
+        timestamp = datetime.now()
+        DB_CURSOR.execute("INSERT INTO event_logs (timestamp, event_type, details) VALUES (%s, %s, %s)",
+                          (timestamp, data["event"], str(data.get("details", None))))
+        DB_CONN.commit()
+        print("Logged Event:", data)
+    except psycopg2.Error as e:
+        DB_CONN.rollback()
+        print("Database Error:", e.pgerror)
+    except Exception as e:
+        print("Unexpected Error:", e)
 
 def log_event(event, details=None):
-    DB_CURSOR.execute("INSERT INTO event_logs (timestamp, event_type, details) VALUES (%s, %s, %s)",
-                      (time.time(), event, str(details)))
-    DB_CONN.commit()
-    print("[LOG]", event, details)
+    try:
+        timestamp = datetime.now()
+        DB_CURSOR.execute("INSERT INTO event_logs (timestamp, event_type, details) VALUES (%s, %s, %s)",
+                          (timestamp, event, str(details)))
+        DB_CONN.commit()
+        print("[LOG]", event, details)
+    except psycopg2.Error as e:
+        DB_CONN.rollback()
+        print("Database Error:", e.pgerror)
+    except Exception as e:
+        print("Unexpected Error:", e)
 
 def start_selenium_bot():
     options = webdriver.ChromeOptions()
@@ -101,47 +115,40 @@ def start_selenium_bot():
     log_event("Exam Page Opened")
     
     for _ in range(10):
-        x, y = random.randint(100, 800), random.randint(100, 600)
-        pyautogui.moveTo(x, y, duration=random.uniform(0.2, 1.0))
+        x, y = random.randint(200, 1200), random.randint(150, 700)  # Avoid screen edges
+        pyautogui.moveTo(x, y, duration=random.uniform(0.5, 2.0))  # More natural movement
         log_event("Cursor Movement", {"x": x, "y": y})
         time.sleep(random.uniform(0.5, 2))
     
     question_element = driver.find_element(By.TAG_NAME, "p")
-    pyautogui.moveTo(question_element.location['x'], question_element.location['y'], duration=1)
+    pyautogui.moveTo(question_element.location['x'] + 5, question_element.location['y'] + 5, duration=1)
     pyautogui.doubleClick()
     pyautogui.hotkey('ctrl', 'c')
     log_event("Copied Question", {"question": question_element.text})
-    time.sleep(1)
+    time.sleep(random.uniform(1, 3))
     
     driver.execute_script("window.open('https://chat.openai.com/','_blank');")
     driver.switch_to.window(driver.window_handles[-1])
     log_event("Tab Switched", {"url": "https://chat.openai.com/"})
-    time.sleep(3)
+    time.sleep(random.uniform(3, 5))
     
     chat_input = driver.find_element(By.TAG_NAME, "textarea")
-    pyautogui.moveTo(chat_input.location['x'], chat_input.location['y'], duration=1)
+    pyautogui.moveTo(chat_input.location['x'] + 5, chat_input.location['y'] + 5, duration=1)
     pyautogui.click()
     pyautogui.hotkey('ctrl', 'v')
     pyautogui.press('enter')
     log_event("Pasted Question in Chatbot")
-    time.sleep(5)
-    
-    chat_response = driver.find_element(By.CLASS_NAME, "response-text")
-    pyautogui.moveTo(chat_response.location['x'], chat_response.location['y'], duration=1)
-    pyautogui.doubleClick()
-    pyautogui.hotkey('ctrl', 'c')
-    log_event("Copied Answer from Chatbot")
-    time.sleep(1)
+    time.sleep(random.uniform(5, 8))
     
     driver.switch_to.window(driver.window_handles[0])
     log_event("Switched Back to Exam Tab")
     answer_box = driver.find_element(By.ID, "answer")
-    pyautogui.moveTo(answer_box.location['x'], answer_box.location['y'], duration=1)
+    pyautogui.moveTo(answer_box.location['x'] + 5, answer_box.location['y'] + 5, duration=1)
     pyautogui.click()
     pyautogui.hotkey('ctrl', 'v')
     pyautogui.press(Keys.RETURN)
     log_event("Entered Answer in Exam")
-    time.sleep(2)
+    time.sleep(random.uniform(2, 4))
     
     print("Selenium bot completed AI-assisted cheating interaction. Closing bot.")
     driver.quit()

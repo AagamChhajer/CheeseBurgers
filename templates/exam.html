@@ -1,21 +1,71 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proctored Exam</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.js"></script>
-    <script src="/static/script.js"></script>
+    <title>Online Exam - Proctored</title>
+    <a href='/dashboard' style='position: fixed; top: 10px; right: 10px; background: #007BFF; color: white; padding: 10px; border-radius: 5px; text-decoration: none;'>View Dashboard</a>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { background-color: #f4f4f9; }
+        .exam-container { max-width: 700px; margin: auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        .monitoring { background: #eee; padding: 10px; border-radius: 5px; }
+    </style>
 </head>
 <body>
-    <h1>Online Proctored Exam</h1>
-    <p>Answer the following questions:</p>
-    <p>1. What is the capital of France?</p>
-    <p>2. Explain Newton's First Law of Motion.</p>
-    <p>3. Solve: 2x + 5 = 15.</p>
-    <p>4. Who wrote 'Pride and Prejudice'?</p>
-    <p>5. What is the chemical formula for water?</p>
-    <input type="text" id="answer">
+    <div class="container mt-4">
+        <div class="exam-container">
+            <h2 class="text-center text-danger">Proctored Exam</h2>
+            <div class="card shadow-sm p-4">
+                <h5 class="text-primary">Question:</h5>
+                <p id="question">What is the capital of France?</p>
+                <input type="text" id="answer" class="form-control mt-2" placeholder="Type your answer here">
+                <button class="btn btn-success mt-3" id="submit-answer">Submit Answer</button>
+            </div>
+            <div class="mt-4 monitoring">
+                <h5 class="text-secondary">Live Monitoring</h5>
+                <p>Cursor Movements: <span id="cursor-data">N/A</span></p>
+                <p>Tab Switches: <span id="tab-switch-data">N/A</span></p>
+                <p>Key Presses: <span id="keystroke-data">N/A</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        function logEvent(eventType, details) {
+            socket.emit('log_event', { event: eventType, details: details });
+        }
+
+        document.getElementById("submit-answer").addEventListener("click", function() {
+            let answer = document.getElementById("answer").value;
+            logEvent("Answer Submitted", { answer: answer });
+            alert("Your answer has been submitted!");
+        });
+
+        document.addEventListener("mousemove", function(event) {
+            let position = { x: event.clientX, y: event.clientY };
+            logEvent("Cursor Movement", position);
+            document.getElementById("cursor-data").textContent = `X: ${position.x}, Y: ${position.y}`;
+        });
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                logEvent("Tab Switched", { status: "Left Exam Tab" });
+                document.getElementById("tab-switch-data").textContent = "Left Exam Tab";
+            } else {
+                logEvent("Tab Switched", { status: "Returned to Exam Tab" });
+                document.getElementById("tab-switch-data").textContent = "Returned to Exam Tab";
+            }
+        });
+
+        document.addEventListener("keydown", function(event) {
+            logEvent("Key Pressed", { key: event.key });
+            document.getElementById("keystroke-data").textContent = `Last Key Pressed: ${event.key}`;
+        });
+    </script>
 </body>
 </html>
