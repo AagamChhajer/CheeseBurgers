@@ -10,6 +10,12 @@ import random
 import pyautogui
 from datetime import datetime
 
+# import loguru
+
+# logging = loguru.logger
+# logging.add("logs.log")
+#Hello World
+
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
