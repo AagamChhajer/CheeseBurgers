@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIELD Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>SHIELD Dashboard</h1>
+    
+    <h2>Event Logs</h2>
+    <table id="event_logs">
+        <tr><th>Timestamp</th><th>Event Type</th><th>Details</th></tr>
+    </table>
+    
+    <h2>Mouse Movements</h2>
+    <table id="mouse_movements">
+        <tr><th>Timestamp</th><th>X Position</th><th>Y Position</th></tr>
+    </table>
+    
+    <h2>Keystrokes</h2>
+    <table id="keystrokes">
+        <tr><th>Timestamp</th><th>Key Pressed</th></tr>
+    </table>
+    
+    <h2>Tab Switches</h2>
+    <table id="tab_switches">
+        <tr><th>Timestamp</th><th>Tab URL</th></tr>
+    </table>
+    
+    <script>
+        function fetchData(endpoint, tableId) {
+            $.get(endpoint, function(data) {
+                let table = $(tableId);
+                table.find("tr:gt(0)").remove(); // Clear previous rows
+                data.forEach(row => {
+                    let newRow = `<tr>
+                        <td>${row.timestamp}</td>
+                        <td>${Object.values(row).slice(1).join('</td><td>')}</td>
+                    </tr>`;
+                    table.append(newRow);
+                });
+            });
+        }
+        
+        function refreshDashboard() {
+            fetchData('/get_logs', '#event_logs');
+            fetchData('/get_mouse_movements', '#mouse_movements');
+            fetchData('/get_keystrokes', '#keystrokes');
+            fetchData('/get_tab_switches', '#tab_switches');
+        }
+        
+        $(document).ready(function() {
+            refreshDashboard();
+            setInterval(refreshDashboard, 5000); // Auto-refresh every 5 seconds
+        });
+    </script>
+</body>
+</html>
