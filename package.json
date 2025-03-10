@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "prisma": "^6.4.1",
+    "websockets": "^0.2.0"
+  }
+}
