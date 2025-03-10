@@ -24,6 +24,8 @@ Update your `.env` file with the following database connection string:
 ```env
 DATABASE_URL="postgresql://myuser:mysecretpassword@localhost:5432/mydb?schema=public"
 ```
+## Prisma Schema
+![Image](https://github.com/user-attachments/assets/a4673ab0-4a52-40b4-b502-19285b81119c)
 
 ## Step 4: Migrate the Database
 Run the following command to apply the migration:
