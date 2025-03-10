@@ -8,7 +8,8 @@
 ## Step 1: Run PostgreSQL in Docker
 Execute the following command to start a PostgreSQL container:
 ```sh
-docker run -d --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_USER=myuser -e POSTGRES_DB=mydb -p 5432:5432 postgres
+docker run -d --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_USER=myuser -e POSTGRES_DB=mydb \
+-p 5432:5432 postgres
 ```
 
 ## Step 2: Initialize Prisma
@@ -22,62 +23,6 @@ This will generate a `prisma` folder with a `schema.prisma` file and an `.env` f
 Update your `.env` file with the following database connection string:
 ```env
 DATABASE_URL="postgresql://myuser:mysecretpassword@localhost:5432/mydb?schema=public"
-```
-
-Modify your `prisma/schema.prisma` file to include:
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model User {
-  id        Int    @id @default(autoincrement())
-  username  String @unique
-  eventLogs EventLog[]
-  mouseMovements MouseMovement[]
-  tabSwitches TabSwitch[]
-  keystrokes Keystroke[]
-}
-
-model EventLog {
-  id         Int      @id @default(autoincrement())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     Int
-  timestamp  DateTime @default(now())
-  eventType  String
-  details    String?
-}
-
-model MouseMovement {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
-  timestamp DateTime @default(now())
-  xPos      Int
-  yPos      Int
-}
-
-model TabSwitch {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
-  timestamp DateTime @default(now())
-  tabUrl    String
-}
-
-model Keystroke {
-  id         Int      @id @default(autoincrement())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     Int
-  timestamp  DateTime @default(now())
-  keyPressed String
-}
-
 ```
 
 ## Step 4: Migrate the Database
