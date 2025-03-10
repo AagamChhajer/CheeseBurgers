@@ -36,10 +36,48 @@ datasource db {
 }
 
 model User {
-  id    Int    @id @default(autoincrement())
-  name  String
-  email String @unique
+  id        Int    @id @default(autoincrement())
+  username  String @unique
+  eventLogs EventLog[]
+  mouseMovements MouseMovement[]
+  tabSwitches TabSwitch[]
+  keystrokes Keystroke[]
 }
+
+model EventLog {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  timestamp  DateTime @default(now())
+  eventType  String
+  details    String?
+}
+
+model MouseMovement {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  timestamp DateTime @default(now())
+  xPos      Int
+  yPos      Int
+}
+
+model TabSwitch {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  timestamp DateTime @default(now())
+  tabUrl    String
+}
+
+model Keystroke {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  timestamp  DateTime @default(now())
+  keyPressed String
+}
+
 ```
 
 ## Step 4: Migrate the Database
