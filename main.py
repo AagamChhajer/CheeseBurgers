@@ -9,6 +9,7 @@ import threading
 import random
 import pyautogui
 from datetime import datetime
+import jwt  # Add this for authentication
 
 # import loguru
 
@@ -19,6 +20,9 @@ from datetime import datetime
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Add JWT secret key
+app.config['SECRET_KEY'] = 'your-secret-key'  # Change this in production
+
 # Database Configuration
 DB_CONN = psycopg2.connect(
     dbname="shield", user="pranay", password="1234", host="localhost", port="5432")
@@ -28,7 +32,11 @@ DB_CURSOR = DB_CONN.cursor()
 DB_CURSOR.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        student_id VARCHAR(255),
+        course VARCHAR(255)
     )
 ''')
 
@@ -159,6 +167,35 @@ def start_selenium_bot():
     print("Selenium bot completed AI-assisted cheating interaction. Closing bot.")
     driver.quit()
     log_event("Bot Closed")
+
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    data = request.json
+    try:
+        DB_CURSOR.execute(
+            "INSERT INTO users (name, email, password, student_id, course) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (data['name'], data['email'], data['password'], data['studentId'], data['course'])
+        )
+        user_id = DB_CURSOR.fetchone()[0]
+        DB_CONN.commit()
+        
+        token = jwt.encode({'user_id': user_id}, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'token': token}), 201
+    except Exception as e:
+        DB_CONN.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    DB_CURSOR.execute("SELECT id FROM users WHERE email = %s AND password = %s", 
+                     (data['email'], data['password']))
+    user = DB_CURSOR.fetchone()
+    
+    if user:
+        token = jwt.encode({'user_id': user[0]}, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'token': token}), 200
+    return jsonify({'error': 'Invalid credentials'}), 401
 
 if __name__ == '__main__':
     threading.Thread(target=start_selenium_bot).start()
