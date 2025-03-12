@@ -1,93 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 from datetime import datetime
-<<<<<<< HEAD
 from prisma import Prisma
-=======
-import jwt  # Add this for authentication
-
-# import loguru
-
-# logging = loguru.logger
-# logging.add("logs.log")
-#Hello World
->>>>>>> master
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-<<<<<<< HEAD
 db = Prisma()
 db.connect()
-=======
-# Add JWT secret key
-app.config['SECRET_KEY'] = 'your-secret-key'  # Change this in production
-
-# Database Configuration
-DB_CONN = psycopg2.connect(
-    dbname="shield", user="pranay", password="1234", host="localhost", port="5432")
-DB_CURSOR = DB_CONN.cursor()
-
-# Improved Database Schema
-DB_CURSOR.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        student_id VARCHAR(255),
-        course VARCHAR(255)
-    )
-''')
-
-DB_CURSOR.execute('''
-    CREATE TABLE IF NOT EXISTS event_logs (
-        id SERIAL PRIMARY KEY,
-        user_id INT REFERENCES users(id) ON DELETE CASCADE,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        event_type VARCHAR(255) NOT NULL,
-        details TEXT
-    )
-''')
-
-DB_CURSOR.execute('''
-    CREATE TABLE IF NOT EXISTS mouse_movements (
-        id SERIAL PRIMARY KEY,
-        user_id INT REFERENCES users(id) ON DELETE CASCADE,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        x_pos INT,
-        y_pos INT
-    )
-''')
-
-DB_CURSOR.execute('''
-    CREATE TABLE IF NOT EXISTS tab_switches (
-        id SERIAL PRIMARY KEY,
-        user_id INT REFERENCES users(id) ON DELETE CASCADE,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        tab_url TEXT
-    )
-''')
-
-DB_CURSOR.execute('''
-    CREATE TABLE IF NOT EXISTS keystrokes (
-        id SERIAL PRIMARY KEY,
-        user_id INT REFERENCES users(id) ON DELETE CASCADE,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        key_pressed TEXT
-    )
-''')
-
-DB_CONN.commit()
-
-@app.route('/')
-def index():
-    return render_template('exam.html')
-
-@app.route('/dashboard')
-def dashboard():
-    return render_template('dashboard.html')
->>>>>>> master
 
 @app.route('/get_logs', methods=['GET'])
 def get_logs():
