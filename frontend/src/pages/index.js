@@ -14,6 +14,7 @@ export default function Home() {
   const [showSignupModalState, setShowSignupModalState] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
   const [showEditor, setShowEditor] = useState(true);
+  const [endTime, setEndTime] = useState(null);
 
   // Form refs
   const loginEmailRef = useRef(null);
@@ -35,13 +36,114 @@ export default function Home() {
       type: 'coding',
       question: 'Write a function that returns the sum of two numbers.',
       language: 'javascript',
+      template: `function sum(a, b) {
+  // Write your code here
+  
+}
+
+// Test cases
+console.log(sum(1, 2)); // Should return 3
+console.log(sum(5, 3)); // Should return 8`,
       testCases: [
         { input: [1, 2], expected: 3 },
         { input: [5, 3], expected: 8 }
       ]
+    },
+    {
+      type: 'coding',
+      question: 'Write a function that checks if a string is a palindrome (reads the same forwards and backwards). Ignore case and special characters.',
+      language: 'javascript',
+      template: `function isPalindrome(str) {
+  // Write your code here
+  // Example: "A man, a plan, a canal: Panama" should return true
+  
+}
+
+// Test cases
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // Should return true
+console.log(isPalindrome("race a car")); // Should return false
+console.log(isPalindrome("Was it a car or a cat I saw?")); // Should return true`,
+      testCases: [
+        { input: ["A man, a plan, a canal: Panama"], expected: true },
+        { input: ["race a car"], expected: false },
+        { input: ["Was it a car or a cat I saw?"], expected: true }
+      ]
+    },
+    {
+      type: 'coding',
+      question: 'Write a function that finds the missing number in an array containing numbers from 1 to n with one number missing.',
+      language: 'javascript',
+      template: `function findMissingNumber(arr) {
+  // Write your code here
+  // Example: [1, 3, 4, 5] should return 2
+  
+}
+
+// Test cases
+console.log(findMissingNumber([1, 3, 4, 5])); // Should return 2
+console.log(findMissingNumber([1, 2, 4, 5, 6])); // Should return 3
+console.log(findMissingNumber([1, 2, 3, 5, 6, 7])); // Should return 4`,
+      testCases: [
+        { input: [[1, 3, 4, 5]], expected: 2 },
+        { input: [[1, 2, 4, 5, 6]], expected: 3 },
+        { input: [[1, 2, 3, 5, 6, 7]], expected: 4 }
+      ]
+    },
+    {
+      type: 'coding',
+      question: 'Write a function that implements a basic calculator to evaluate a simple arithmetic expression with +, -, *, / operators.',
+      language: 'javascript',
+      template: `function calculate(expression) {
+  // Write your code here
+  // Example: "2 + 3 * 4" should return 14
+  // Handle basic operator precedence (* and / before + and -)
+  
+}
+
+// Test cases
+console.log(calculate("2 + 3 * 4")); // Should return 14
+console.log(calculate("10 - 2 * 3")); // Should return 4
+console.log(calculate("20 / 4 + 2")); // Should return 7`,
+      testCases: [
+        { input: ["2 + 3 * 4"], expected: 14 },
+        { input: ["10 - 2 * 3"], expected: 4 },
+        { input: ["20 / 4 + 2"], expected: 7 }
+      ]
+    },
+    {
+      type: 'coding',
+      question: 'Write a function that finds the longest common prefix among an array of strings.',
+      language: 'javascript',
+      template: `function longestCommonPrefix(strs) {
+  // Write your code here
+  // Example: ["flower", "flow", "flight"] should return "fl"
+  // If there is no common prefix, return ""
+  
+}
+
+// Test cases
+console.log(longestCommonPrefix(["flower", "flow", "flight"])); // Should return "fl"
+console.log(longestCommonPrefix(["dog", "racecar", "car"])); // Should return ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // Should return "inters"`,
+      testCases: [
+        { input: [["flower", "flow", "flight"]], expected: "fl" },
+        { input: [["dog", "racecar", "car"]], expected: "" },
+        { input: [["interspecies", "interstellar", "interstate"]], expected: "inters" }
+      ]
     }
-    // Add more questions as needed
   ];
+
+  // Add state for code answers with proper initialization
+  const [codeAnswers, setCodeAnswers] = useState(() => {
+    // Initialize with templates for each coding question
+    const initialAnswers = {};
+    questions.forEach((question, index) => {
+      if (question.type === 'coding') {
+        initialAnswers[index] = question.template;
+      }
+    });
+    return initialAnswers;
+  });
 
   // Handle clicks outside modals
   useEffect(() => {
@@ -60,11 +162,28 @@ export default function Home() {
     };
   }, []);
 
+  // Add fullscreen change event listener
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (examStarted && !document.fullscreenElement) {
+        // If exam is started and user exits fullscreen, force back to fullscreen
+        document.documentElement.requestFullscreen().catch(err => {
+          alert('Warning: Fullscreen is required for the exam. Please do not exit fullscreen mode.');
+        });
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [examStarted]);
+
   // Cleanup function for event listeners and timers
   const cleanupResources = () => {
     // Clear timer
     if (timer) {
-      clearInterval(timer);
+      cancelAnimationFrame(timer);
       setTimer(null);
     }
 
@@ -79,7 +198,7 @@ export default function Home() {
     document.removeEventListener('keypress', resetInactivityTimer);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     
-    // Exit fullscreen if active
+    // Exit fullscreen only when exam is complete
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(err => console.error('Error exiting fullscreen:', err));
     }
@@ -124,33 +243,47 @@ export default function Home() {
       return;
     }
 
-    setExamStarted(true);
-    setShowEditor(true);
-    startTimer();
-    loadQuestion(0);
-    setupExamMonitoring();
+    // Enter fullscreen before starting exam
+    document.documentElement.requestFullscreen()
+      .then(() => {
+        setExamStarted(true);
+        setShowEditor(true);
+        startTimer();
+        loadQuestion(0);
+        setupExamMonitoring();
+      })
+      .catch(err => {
+        alert('Error: Fullscreen mode is required for the exam. Please allow fullscreen mode.');
+      });
   };
 
   const submitExam = () => {
     // Show confirmation dialog
     if (window.confirm('Are you sure you want to submit your exam?')) {
-      // First, hide the editor to prevent Monaco errors
+      // First hide editor to trigger cleanup
       setShowEditor(false);
+      
+      // Clear any existing timers and event listeners
+      cleanupResources();
+      
+      // Reset Monaco Environment
+      if (typeof window !== 'undefined' && window.MonacoEnvironment) {
+        window.MonacoEnvironment = undefined;
+      }
       
       // Show completion message
       setShowCompletionMessage(true);
       
-      // Clean up resources
-      cleanupResources();
-      
       // Redirect to main page after a short delay
       setTimeout(() => {
-        // Reset states
+        // Reset all states
         setExamStarted(false);
         setShowCompletionMessage(false);
         setCurrentQuestion(0);
         setTime(7200);
         setTabSwitchCount(0);
+        setEndTime(null);
+        setCodeAnswers({});
         
         // Show success message
         alert('Exam submitted successfully!');
@@ -176,33 +309,52 @@ export default function Home() {
 
   // Timer functions
   const startTimer = () => {
-    setTimer(
-      setInterval(() => {
-        setTime((prevTime) => {
-          if (prevTime <= 0) {
-            clearInterval(timer);
-            alert('Time is up!');
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000)
-    );
+    // Clear any existing timer first
+    if (timer) {
+      cancelAnimationFrame(timer);
+    }
+
+    // Set the end time based on current time plus remaining seconds
+    const end = Date.now() + (time * 1000);
+    setEndTime(end);
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((end - now) / 1000));
+      
+      if (remaining <= 0) {
+        setTime(0);
+        submitExam();
+        return;
+      }
+
+      setTime(remaining);
+      const timerId = requestAnimationFrame(updateTimer);
+      setTimer(timerId);
+    };
+
+    updateTimer();
   };
 
   useEffect(() => {
-    if (time <= 0 && timer) {
-      clearInterval(timer);
-      alert('Time is up!');
-      submitExam();
-    }
-
+    // Cleanup function
     return () => {
       if (timer) {
-        clearInterval(timer);
+        cancelAnimationFrame(timer);
       }
     };
-  }, [time, timer]);
+  }, [timer]);
+
+  useEffect(() => {
+    if (time <= 0 && endTime) {
+      if (timer) {
+        cancelAnimationFrame(timer);
+        setTimer(null);
+      }
+      setEndTime(null);
+      submitExam();
+    }
+  }, [time, endTime]);
 
   const formatTime = () => {
     const hours = Math.floor(time / 3600);
@@ -244,21 +396,12 @@ export default function Home() {
     }, 60000); // 1 minute
   };
 
-  // Fullscreen functions
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error('Error attempting to enable fullscreen:', err);
-      });
-      setFullscreenMode(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(err => {
-          console.error('Error attempting to exit fullscreen:', err);
-        });
-        setFullscreenMode(false);
-      }
-    }
+  // Handle code change with proper state management
+  const handleCodeChange = (questionIndex, newCode) => {
+    setCodeAnswers(prev => ({
+      ...prev,
+      [questionIndex]: newCode
+    }));
   };
 
   // Cleanup on component unmount
@@ -271,7 +414,7 @@ export default function Home() {
   return (
     <div className="bg-gray-50">
       <Head>
-        <title>ExamPro - Online Examination Platform</title>
+        <title>SHIELD - Secure Holistic Integrated Examination and Learning Development</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -282,7 +425,7 @@ export default function Home() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between h-16">
                 <div className="flex-shrink-0 flex items-center">
-                  <h1 className="text-2xl font-bold text-indigo-600">ExamPro</h1>
+                  <h1 className="text-2xl font-bold text-indigo-600">SHIELD</h1>
                 </div>
                 <div className="flex items-center" id="userSection">
                   {currentUser ? (
@@ -304,10 +447,10 @@ export default function Home() {
           <main className="max-w-7xl mx-auto py-12 sm:px-6 lg:px-8">
             <div className="text-center">
               <h2 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
-                Welcome to ExamPro
+                Welcome to SHIELD
               </h2>
               <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-                Your trusted platform for online examinations
+                Secure Holistic Integrated Examination and Learning Development
               </p>
               <div className="mt-5 max-w-md mx-auto">
                 <button onClick={startExam} className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">
@@ -328,10 +471,7 @@ export default function Home() {
                   <span id="timer" className="text-2xl font-bold text-red-600">{formatTime()}</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="mr-4 text-gray-700">{currentUser?.name}</span>
-                  <button onClick={toggleFullscreen} className="px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200" aria-label="Toggle fullscreen">
-                    <i className="bi bi-fullscreen"></i>
-                  </button>
+                  <span className="text-gray-700">{currentUser?.name}</span>
                 </div>
               </div>
             </header>
@@ -371,7 +511,14 @@ export default function Home() {
                       <h2 className="text-xl font-bold mb-4">Question {currentQuestion + 1}</h2>
                       <p className="mb-4">{questions[currentQuestion]?.question}</p>
                       <div className="monaco-editor">
-                        <MonacoEditor language={questions[currentQuestion]?.language} />
+                        {showEditor && (
+                          <MonacoEditor 
+                            key={`editor-${currentQuestion}`}
+                            language={questions[currentQuestion]?.language}
+                            value={codeAnswers[currentQuestion]}
+                            onChange={(newValue) => handleCodeChange(currentQuestion, newValue)}
+                          />
+                        )}
                       </div>
                     </div>
                   )}

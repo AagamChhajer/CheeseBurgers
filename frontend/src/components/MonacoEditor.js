@@ -12,9 +12,45 @@ export function MonacoEditor({ language, value = '// Write your code here', onCh
 
     const loadMonaco = async () => {
       try {
+        // Configure Monaco's base path for workers
+        if (typeof window !== 'undefined') {
+          window.MonacoEnvironment = {
+            getWorker: function (moduleId, label) {
+              const getWorkerModule = (label) => {
+                switch (label) {
+                  case 'typescript':
+                  case 'javascript':
+                    return new Worker(new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url));
+                  default:
+                    return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
+                }
+              };
+
+              try {
+                return getWorkerModule(label);
+              } catch (e) {
+                console.error('Worker initialization error:', e);
+                return null;
+              }
+            }
+          };
+        }
+
         // Use dynamic import to load Monaco
-        const monaco = await import('monaco-editor');
+        const monaco = await import('monaco-editor/esm/vs/editor/editor.api');
+        
         if (isMounted) {
+          // Configure TypeScript/JavaScript defaults
+          monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+            noSemanticValidation: true,
+            noSyntaxValidation: false
+          });
+
+          monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+            target: monaco.languages.typescript.ScriptTarget.ES2015,
+            allowNonTsExtensions: true
+          });
+
           setMonacoInstance(monaco);
         }
       } catch (error) {
@@ -26,6 +62,18 @@ export function MonacoEditor({ language, value = '// Write your code here', onCh
 
     return () => {
       isMounted = false;
+      if (editorRef.current) {
+        try {
+          const model = editorRef.current.getModel();
+          if (model) {
+            model.dispose();
+          }
+          editorRef.current.dispose();
+          editorRef.current = null;
+        } catch (e) {
+          console.error('Error disposing editor:', e);
+        }
+      }
     };
   }, []);
 
@@ -33,49 +81,85 @@ export function MonacoEditor({ language, value = '// Write your code here', onCh
   useEffect(() => {
     if (!monacoInstance || !containerRef.current) return;
 
-    // If editor already exists, dispose it
-    if (editorRef.current) {
-      editorRef.current.dispose();
-    }
+    let editor;
+    try {
+      // If editor already exists, dispose it
+      if (editorRef.current) {
+        const model = editorRef.current.getModel();
+        if (model) {
+          model.dispose();
+        }
+        editorRef.current.dispose();
+      }
 
-    // Create editor
-    const editor = monacoInstance.editor.create(containerRef.current, {
-      value: value,
-      language: language,
-      theme: 'vs-dark',
-      minimap: { enabled: false },
-      automaticLayout: true,
-    });
-
-    // Set up change handler
-    if (onChange) {
-      editor.onDidChangeModelContent(() => {
-        onChange(editor.getValue());
+      // Create editor
+      editor = monacoInstance.editor.create(containerRef.current, {
+        value: value,
+        language: language,
+        theme: 'vs-dark',
+        minimap: { enabled: false },
+        automaticLayout: true,
+        scrollBeyondLastLine: false,
+        lineNumbers: 'on',
+        renderWhitespace: 'none',
+        contextmenu: true,
+        scrollbar: {
+          vertical: 'visible',
+          horizontal: 'visible'
+        },
+        model: monacoInstance.editor.createModel(value, language)
       });
-    }
 
-    editorRef.current = editor;
-    setIsEditorReady(true);
+      // Set up change handler
+      if (onChange) {
+        editor.onDidChangeModelContent(() => {
+          onChange(editor.getValue());
+        });
+      }
+
+      editorRef.current = editor;
+      setIsEditorReady(true);
+    } catch (error) {
+      console.error('Error creating editor:', error);
+    }
 
     return () => {
-      editor.dispose();
+      if (editor) {
+        try {
+          const model = editor.getModel();
+          if (model) {
+            model.dispose();
+          }
+          editor.dispose();
+        } catch (e) {
+          console.error('Error disposing editor:', e);
+        }
+      }
     };
   }, [monacoInstance, language, containerRef.current]);
 
-  // Update editor value when prop changes (if editor exists and value is different)
+  // Cleanup on unmount
   useEffect(() => {
-    if (editorRef.current && value !== editorRef.current.getValue()) {
-      editorRef.current.setValue(value);
-    }
-  }, [value]);
+    return () => {
+      if (editorRef.current) {
+        try {
+          const model = editorRef.current.getModel();
+          if (model) {
+            model.dispose();
+          }
+          editorRef.current.dispose();
+          editorRef.current = null;
 
-  // Provide method to get current editor value
-  const getValue = () => {
-    if (editorRef.current) {
-      return editorRef.current.getValue();
-    }
-    return '';
-  };
+          // Clean up Monaco Environment
+          if (typeof window !== 'undefined' && window.MonacoEnvironment) {
+            window.MonacoEnvironment = undefined;
+          }
+        } catch (e) {
+          console.error('Error during cleanup:', e);
+        }
+      }
+    };
+  }, []);
 
   return (
     <div ref={containerRef} style={{ height, width: '100%' }} data-is-ready={isEditorReady} />
