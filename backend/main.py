@@ -2,10 +2,8 @@ from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 from datetime import datetime
 from prisma import Prisma
-import jwt
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 db = Prisma()
@@ -94,34 +92,31 @@ def log_keystroke():
 @app.route('/api/signup', methods=['POST'])
 def signup():
     data = request.json
-    print(data)
     try:
-        user = db.user.create({
-            "data": {
-                "username": data['name'],
-                "email": data['email'],
-                "password": data['password'],
-                "studentId": data.get('studentId'),
-                "course": data.get('course')
-            }
-        })
+        DB_CURSOR.execute(
+            "INSERT INTO users (name, email, password, student_id, course) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (data['name'], data['email'], data['password'], data['studentId'], data['course'])
+        )
+        user_id = DB_CURSOR.fetchone()[0]
+        DB_CONN.commit()
         
-        token = jwt.encode({'user_id': user.id}, app.config['SECRET_KEY'], algorithm='HS256')
-        return jsonify({'token': token}), 200
+        token = jwt.encode({'user_id': user_id}, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'token': token}), 201
     except Exception as e:
+        DB_CONN.rollback()
         return jsonify({'error': str(e)}), 400
 
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    try:
-        user = db.user.find_first(where={"email": data['email'], "password": data['password']})
-        if user:
-            # token = jwt.encode({'user_id': user.id}, app.config['SECRET_KEY'], algorithm='HS256')
-            return jsonify({'token'}), 200
-        return jsonify({'error': 'Invalid credentials'}), 401
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    DB_CURSOR.execute("SELECT id FROM users WHERE email = %s AND password = %s", 
+                     (data['email'], data['password']))
+    user = DB_CURSOR.fetchone()
+    
+    if user:
+        token = jwt.encode({'user_id': user[0]}, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'token': token}), 200
+    return jsonify({'error': 'Invalid credentials'}), 401
 
 if __name__ == '__main__':
     # threading.Thread(target=start_selenium_bot).start()
