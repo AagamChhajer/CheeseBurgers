@@ -9,7 +9,18 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "streamlit (>=1.43.1,<2.0.0)",
-    "psycopg2 (>=2.9.10,<3.0.0)"
+<<<<<<< HEAD
+    "pyautogui (>=0.9.54,<0.10.0)"
+=======
+    "psycopg2 (>=2.9.10,<3.0.0)",
+    "flask (>=3.1.0,<4.0.0)",
+    "flask-socketio (>=5.5.1,<6.0.0)",
+    "psycopg2-binary (>=2.9.10,<3.0.0)",
+    "selenium (>=4.29.0,<5.0.0)",
+    "pyautogui (>=0.9.54,<0.10.0)",
+    "pandas (>=2.2.3,<3.0.0)",
+    "watchdog (>=6.0.0,<7.0.0)"
+>>>>>>> a8b636a (Merging)
 ]
 
 [tool.poetry]
