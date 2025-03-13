@@ -192,7 +192,7 @@ class NmapScanner(SecurityScanner):
 class GobusterScanner(SecurityScanner):
     """Tool for running directory discovery with Gobuster."""
     
-    def scan(self, target: str, target_scope: TargetScope, wordlist: str = "/Users/aagamchhajer/wordlists/SecLists/Discovery/Web-Content/common.txt") -> Dict:
+    def scan(self, target: str, target_scope: TargetScope, wordlist: str = "wordlist.txt") -> Dict:
         """Run Gobuster directory scan."""
         if not target.startswith(('http://', 'https://')):
             target = f"http://{target}"
@@ -218,7 +218,7 @@ class GobusterScanner(SecurityScanner):
 class FfufScanner(SecurityScanner):
     """Tool for fuzzing with ffuf."""
     
-    def scan(self, target: str, target_scope: TargetScope, wordlist: str = "/Users/aagamchhajer/wordlists/SecLists/Discovery/Web-Content/common.txt") -> Dict:
+    def scan(self, target: str, target_scope: TargetScope, wordlist: str = "wordlist.txt") -> Dict:
         """Run ffuf fuzzing."""
         if not target.startswith(('http://', 'https://')):
             target = f"http://{target}"
@@ -719,10 +719,10 @@ if __name__ == "__main__":
     allowed_ip_ranges = ["192.168.1.0/24", "10.0.0.0/16"]
     
     # Set the security objective
-    # objective = """Perform a comprehensive security assessment of google.com. 
-    # Identify open ports, discover hidden directories, and test for common web vulnerabilities 
-    # including SQL injection. Ensure all tests are non-intrusive and respect the target scope."""
-    objective = "Discover open ports on google.com"
+    objective = """Perform a comprehensive security assessment of google.com. 
+    Identify open ports, discover hidden directories, and test for common web vulnerabilities 
+    including SQL injection. Ensure all tests are non-intrusive and respect the target scope."""
+    # objective = "Discover open ports on google.com"
     # Run the security audit
     report = run_security_audit(objective, allowed_domains, allowed_ip_ranges)
     

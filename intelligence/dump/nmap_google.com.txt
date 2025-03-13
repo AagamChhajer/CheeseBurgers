@@ -1,0 +1,1 @@
+# Nmap 7.95 scan initiated Fri Mar 14 01:40:28 2025 as: nmap -sV -oN nmap_google.com.txt google.com

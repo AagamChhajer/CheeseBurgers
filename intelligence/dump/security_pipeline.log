@@ -1,0 +1,89 @@
+2025-03-14 01:38:02,525 - INFO - Security Audit Pipeline Initialized
+2025-03-14 01:38:02,534 - INFO - Initializing security audit with objective: Perform a comprehensive security assessment of localhost. 
+    Identify open ports, discover hidden directories, and test for common web vulnerabilities 
+    including SQL injection. Ensure all tests are non-intrusive and respect the target scope.
+2025-03-14 01:38:07,097 - INFO - Initial task plan created with 5 tasks
+2025-03-14 01:38:07,099 - INFO - Executing task: nmap_scan:192.168.1.0/24
+2025-03-14 01:38:07,099 - WARNING - Domain 192.168.1.0/24 is outside allowed scope ['google.com']
+2025-03-14 01:38:07,099 - ERROR - Target 192.168.1.0/24 is outside the allowed scope ['google.com']. Operation terminated.
+2025-03-14 01:38:07,099 - INFO - Task completed in 0.00s: nmap_scan:192.168.1.0/24, success: False
+2025-03-14 01:38:07,100 - INFO - Executing task: nmap_scan:10.0.0.0/16
+2025-03-14 01:38:07,100 - WARNING - Domain 10.0.0.0/16 is outside allowed scope ['google.com']
+2025-03-14 01:38:07,100 - ERROR - Target 10.0.0.0/16 is outside the allowed scope ['google.com']. Operation terminated.
+2025-03-14 01:38:07,100 - INFO - Task completed in 0.00s: nmap_scan:10.0.0.0/16, success: False
+2025-03-14 01:38:07,101 - INFO - Executing task: gobuster_scan:google.com
+2025-03-14 01:38:07,101 - INFO - Executing command for validated target google.com: gobuster dir -u http://google.com -w wordlist.txt -o gobuster_http_google.com.txt
+2025-03-14 01:38:07,131 - WARNING - Command failed (attempt 1/3): Error: error on parsing arguments: wordlist file "wordlist.txt" does not exist: stat wordlist.txt: no such file or directory
+
+2025-03-14 01:38:09,138 - WARNING - Command failed (attempt 2/3): Error: error on parsing arguments: wordlist file "wordlist.txt" does not exist: stat wordlist.txt: no such file or directory
+
+2025-03-14 01:38:13,163 - WARNING - Command failed (attempt 3/3): Error: error on parsing arguments: wordlist file "wordlist.txt" does not exist: stat wordlist.txt: no such file or directory
+
+2025-03-14 01:38:13,164 - INFO - Task completed in 6.06s: gobuster_scan:google.com, success: False
+2025-03-14 01:38:13,166 - INFO - Executing task: ffuf_scan:google.com
+2025-03-14 01:38:13,166 - INFO - Executing command for validated target google.com: ffuf -u http://google.com/FUZZ -w wordlist.txt -o ffuf_http_google.com.json -of json
+2025-03-14 01:38:13,785 - WARNING - Command failed (attempt 1/3): Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+
+2025-03-14 01:38:15,812 - WARNING - Command failed (attempt 2/3): Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+
+2025-03-14 01:38:19,836 - WARNING - Command failed (attempt 3/3): Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+
+2025-03-14 01:38:19,837 - INFO - Task completed in 6.67s: ffuf_scan:google.com, success: False
+2025-03-14 01:38:19,839 - INFO - Executing task: sqlmap_scan:google.com
+2025-03-14 01:38:19,839 - INFO - Executing command for validated target google.com: sqlmap -u http://google.com --batch --output-dir=sqlmap_results
+2025-03-14 01:38:22,151 - INFO - Task completed in 2.31s: sqlmap_scan:google.com, success: True
+2025-03-14 01:38:22,152 - INFO - Executing task: nmap_scan:192.168.1.0/24
+2025-03-14 01:38:22,152 - WARNING - Domain 192.168.1.0/24 is outside allowed scope ['google.com']
+2025-03-14 01:38:22,152 - ERROR - Target 192.168.1.0/24 is outside the allowed scope ['google.com']. Operation terminated.
+2025-03-14 01:38:22,152 - INFO - Task completed in 0.00s: nmap_scan:192.168.1.0/24, success: False
+2025-03-14 01:38:22,152 - INFO - Executing task: nmap_scan:10.0.0.0/16
+2025-03-14 01:38:22,152 - WARNING - Domain 10.0.0.0/16 is outside allowed scope ['google.com']
+2025-03-14 01:38:22,152 - ERROR - Target 10.0.0.0/16 is outside the allowed scope ['google.com']. Operation terminated.
+2025-03-14 01:38:22,152 - INFO - Task completed in 0.00s: nmap_scan:10.0.0.0/16, success: False
+2025-03-14 01:38:22,153 - INFO - Executing task: gobuster_scan:google.com
+2025-03-14 01:38:22,153 - INFO - Executing command for validated target google.com: gobuster dir -u http://google.com -w wordlist.txt -o gobuster_http_google.com.txt
+2025-03-14 01:38:22,159 - WARNING - Command failed (attempt 1/3): Error: error on parsing arguments: wordlist file "wordlist.txt" does not exist: stat wordlist.txt: no such file or directory
+
+2025-03-14 01:38:24,176 - WARNING - Command failed (attempt 2/3): Error: error on parsing arguments: wordlist file "wordlist.txt" does not exist: stat wordlist.txt: no such file or directory
+
+2025-03-14 01:38:28,201 - WARNING - Command failed (attempt 3/3): Error: error on parsing arguments: wordlist file "wordlist.txt" does not exist: stat wordlist.txt: no such file or directory
+
+2025-03-14 01:38:28,201 - INFO - Task completed in 6.05s: gobuster_scan:google.com, success: False
+2025-03-14 01:38:28,203 - INFO - Executing task: ffuf_scan:google.com
+2025-03-14 01:38:28,203 - INFO - Executing command for validated target google.com: ffuf -u http://google.com/FUZZ -w wordlist.txt -o ffuf_http_google.com.json -of json
+2025-03-14 01:38:28,215 - WARNING - Command failed (attempt 1/3): Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+
+2025-03-14 01:38:30,228 - WARNING - Command failed (attempt 2/3): Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+Encountered error(s): 1 errors occured.
+	* stat /Users/deekshaagrawal/bangalore/CheeseBurgers/intelligence/wordlist.txt: no such file or directory
+
+
+2025-03-14 01:40:25,213 - INFO - Security Audit Pipeline Initialized
+2025-03-14 01:40:25,221 - INFO - Initializing security audit with objective: Perform a comprehensive security assessment of google.com. 
+    Identify open ports, discover hidden directories, and test for common web vulnerabilities 
+    including SQL injection. Ensure all tests are non-intrusive and respect the target scope.
+2025-03-14 01:40:28,575 - INFO - Initial task plan created with 4 tasks
+2025-03-14 01:40:28,577 - INFO - Executing task: nmap_scan:google.com
+2025-03-14 01:40:28,577 - INFO - Executing command for validated target google.com: nmap -sV -oN nmap_google.com.txt google.com

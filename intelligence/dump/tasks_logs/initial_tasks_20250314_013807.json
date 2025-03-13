@@ -1,0 +1,45 @@
+{
+  "timestamp": "20250314_013807",
+  "objective": "Perform a comprehensive security assessment of localhost. \n    Identify open ports, discover hidden directories, and test for common web vulnerabilities \n    including SQL injection. Ensure all tests are non-intrusive and respect the target scope.",
+  "target_scope": {
+    "allowed_domains": [
+      "google.com"
+    ],
+    "allowed_ip_ranges": [
+      "192.168.1.0/24",
+      "10.0.0.0/16"
+    ]
+  },
+  "tasks": [
+    {
+      "task_type": "nmap_scan",
+      "target": "192.168.1.0/24",
+      "description": "Perform a network scan to identify open ports and services running on devices within the local subnet.",
+      "priority": 1
+    },
+    {
+      "task_type": "nmap_scan",
+      "target": "10.0.0.0/16",
+      "description": "Conduct a network scan to discover open ports and services on devices within the larger subnet.",
+      "priority": 2
+    },
+    {
+      "task_type": "gobuster_scan",
+      "target": "http://google.com",
+      "description": "Use Gobuster to discover hidden directories and files on the target web application.",
+      "priority": 3
+    },
+    {
+      "task_type": "ffuf_scan",
+      "target": "http://google.com",
+      "description": "Utilize FFUF to perform a fuzzing attack to find additional hidden endpoints and resources on the web application.",
+      "priority": 4
+    },
+    {
+      "task_type": "sqlmap_scan",
+      "target": "http://google.com",
+      "description": "Test for SQL injection vulnerabilities on the target web application using SQLMap.",
+      "priority": 5
+    }
+  ]
+}
