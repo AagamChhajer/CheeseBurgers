@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int             @id @default(autoincrement())
+  username       String          @unique
+  course         String?
+  email          String          @unique
+  password       String
+  studentId      String?
+  eventLogs      EventLog[]
+  keystrokes     Keystroke[]
+  Login          Login[]
+  mouseMovements MouseMovement[]
+  Signup         Signup[]
+  tabSwitches    TabSwitch[]
+}
+
+model EventLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  timestamp DateTime @default(now())
+  eventType String
+  details   String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MouseMovement {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  timestamp DateTime @default(now())
+  xPos      Int
+  yPos      Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TabSwitch {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  timestamp DateTime @default(now())
+  tabUrl    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Keystroke {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  timestamp  DateTime @default(now())
+  keyPressed String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Login {
+  id        Int      @id @default(autoincrement())
+  email     String
+  password  String
+  userId    Int
+  timestamp DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Signup {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  password  String
+  userId    Int
+  timestamp DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

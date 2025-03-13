@@ -4,43 +4,62 @@ import React, { useState } from 'react';
 
 interface SignupModalProps {
   isVisible: boolean;
-  onSignup: (name: string, email: string, password: string) => void;
   onClose?: () => void;
-  error?: string | null;
 }
 
-export const SignupModal: React.FC<SignupModalProps> = ({
-  isVisible,
-  onSignup,
-  onClose,
-  error
-}) => {
+export const SignupModal: React.FC<SignupModalProps> = ({ isVisible, onClose }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [userId, setUserId] = useState(''); // User ID (should be fetched dynamically if applicable)
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null);
+    setError(null);
+    setSuccess(false);
 
-    if (!name || !email || !password || !confirmPassword) {
-      setLocalError('Please fill in all fields');
+    if (!name || !email || !password || !confirmPassword || !userId) {
+      setError('All fields are required');
       return;
     }
 
     if (password !== confirmPassword) {
-      setLocalError('Passwords do not match');
+      setError('Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
-      setLocalError('Password must be at least 6 characters long');
+      setError('Password must be at least 6 characters long');
       return;
     }
 
-    onSignup(name, email, password);
+    try {
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password, userId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Signup failed');
+      }
+
+      setSuccess(true);
+      setName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setUserId('');
+    } catch (error: any) {
+      setError(error.message);
+    }
   };
 
   if (!isVisible) return null;
@@ -49,14 +68,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 max-w-md w-full">
         <h2 className="text-2xl font-bold mb-6">Sign Up</h2>
-        
-        {(error || localError) && (
+
+        {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error || localError}
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            Signup successful! You can now log in.
+          </div>
+        )}
+
+        <form onSubmit={handleSignup}>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
               Full Name
@@ -99,7 +124,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmPassword">
               Confirm Password
             </label>
@@ -110,6 +135,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               placeholder="Confirm your password"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="userId">
+              User ID
+            </label>
+            <input
+              type="text"
+              id="userId"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Enter your user ID"
             />
           </div>
 
@@ -134,4 +173,4 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       </div>
     </div>
   );
-}; 
+};
