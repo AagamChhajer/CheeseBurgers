@@ -7,13 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Login {
+  id        Int      @id @default(autoincrement())
+  email     String
+  password  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  timestamp DateTime @default(now())
+}
+
+model Signup {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  password  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  timestamp DateTime @default(now())
+}
+
 model User {
   id        Int    @id @default(autoincrement())
   username  String @unique
+  email     String @unique
+  password  String
+  studentId String?
+  course    String?
   eventLogs EventLog[]
   mouseMovements MouseMovement[]
   tabSwitches TabSwitch[]
   keystrokes Keystroke[]
+  signups   Signup[]
+  logins    Login[]
 }
 
 model EventLog {
