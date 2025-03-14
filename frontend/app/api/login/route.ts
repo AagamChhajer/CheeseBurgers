@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Set a secure session cookie
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         cookieStore.set({
             name: 'userId',
             value: user.id.toString(),

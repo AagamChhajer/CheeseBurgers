@@ -5,15 +5,17 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "start": "tsx index.ts"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@prisma/client": "^6.5.0",
     "@types/bcrypt": "^5.0.2",
     "@types/ws": "^8.18.0",
     "axios": "^1.8.3",
     "bcrypt": "^5.1.1",
+    "monaco-editor": "^0.52.2",
     "next": "15.2.2",
     "node-fetch": "^3.3.2",
     "prisma": "^6.5.0",
