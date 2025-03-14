@@ -8,15 +8,17 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
+# from langchain_anthropic import ChatAnthropic
+from langchain_core.runnables import RunnablePassthrough
 
 import langgraph.graph as lg
 from langgraph.graph import END, StateGraph
-from langgraph.checkpoint.sqlite import SqliteSaver
+# from langgraph.checkpoint.sqlite import SqliteSaver
+# from langgraph.checkpoint.postgres import PostgresSaver
 
 # Prisma integration
 from prisma import Prisma
-from prisma.models import Question, LLMSolution, Comparison
+import asyncio
 
 # Environment variables
 import dotenv
@@ -63,18 +65,16 @@ class PipelineState(TypedDict):
 prisma_client = Prisma()
 
 @tool
-async def connect_to_database() -> str:
+async def connect_to_database(dummy: str = "") -> str:
     """Connect to the Neon PostgreSQL database via Prisma."""
     await prisma_client.connect()
     return "Connected to Neon PostgreSQL database"
 
-
 @tool
-async def disconnect_from_database() -> str:
+async def disconnect_from_database(dummy: str = "") -> str:
     """Disconnect from the Neon PostgreSQL database."""
     await prisma_client.disconnect()
     return "Disconnected from Neon PostgreSQL database"
-
 
 @tool
 async def get_question_from_db(question_id: int) -> QuestionType:
@@ -95,22 +95,19 @@ async def get_question_from_db(question_id: int) -> QuestionType:
         "constraints": question.constraints or ""
     }
 
-
 @tool
-async def store_llm_solution(solution: LLMSolutionType) -> str:
+async def store_llm_solution(solution_data: LLMSolutionType) -> str:
     """Store an LLM-generated solution in the database."""
     await prisma_client.llmsolution.create(
         data={
-            "questionId": solution["question_id"],
-            "llmName": solution["llm_name"],
-            "solution": solution["solution"],
+            "questionId": solution_data["question_id"],
+            "llmName": solution_data["llm_name"],
+            "solution": solution_data["solution"],
             "timestamp": datetime.now(),
-            "metrics": {}  # Default empty metrics
+            "metrics": {}
         }
     )
-    
-    return f"Solution for {solution['llm_name']} stored successfully"
-
+    return f"Solution for {solution_data['llm_name']} stored successfully"
 
 @tool
 async def store_comparison_result(result: ComparisonResultType) -> str:
@@ -132,29 +129,24 @@ async def store_comparison_result(result: ComparisonResultType) -> str:
 
 def create_llm_toolkit():
     """Create LLM instances for code generation."""
-    llms = {
-        "claude-3-opus": ChatAnthropic(
-            model="claude-3-opus-20240229",
-            temperature=0.2,
-            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")
-        ),
-        "claude-3-sonnet": ChatAnthropic(
-            model="claude-3-sonnet-20240229",
-            temperature=0.2,
-            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")
-        ),
-        "gpt-4-turbo": ChatOpenAI(
-            model="gpt-4-turbo-preview",
-            temperature=0.2,
+    llm_list = {
+        "gpt_1": ChatOpenAI(
+            model="gpt-3.5-turbo",
+            temperature=0.1,
             openai_api_key=os.getenv("OPENAI_API_KEY")
         ),
-        "gpt-3.5-turbo": ChatOpenAI(
+        "gpt_2": ChatOpenAI(
             model="gpt-3.5-turbo",
             temperature=0.2,
             openai_api_key=os.getenv("OPENAI_API_KEY")
+        ),
+        "gpt_3": ChatOpenAI(
+            model="gpt-3.5-turbo",
+            temperature=0.3,
+            openai_api_key=os.getenv("OPENAI_API_KEY")
         )
     }
-    return llms
+    return llm_list
 
 
 # Define the system prompt for code generation
@@ -169,38 +161,6 @@ code_gen_prompt = ChatPromptTemplate.from_messages([
     Language: {language}
     """)
 ])
-
-
-async def generate_solution(llm, state, llm_name):
-    """Generate code solution using the specified LLM."""
-    question = state["question"]
-    
-    try:
-        chain = code_gen_prompt | llm
-        response = chain.invoke({
-            "question_text": question["text"],
-            "constraints": question.get("constraints", ""),
-            "language": question.get("language", "Python")
-        })
-        
-        # Extract just the code
-        solution = response.content
-        
-        # Update state with the new solution
-        state["llm_solutions"][llm_name] = solution
-        
-        # Store in database
-        await store_llm_solution({
-            "question_id": question["id"],
-            "llm_name": llm_name,
-            "solution": solution,
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        return state
-    except Exception as e:
-        state["error"] = f"Error generating solution with {llm_name}: {str(e)}"
-        return state
 
 
 # --------------------- CODE COMPARISON --------------------- #
@@ -222,6 +182,55 @@ def calculate_code_similarity(code1: str, code2: str) -> float:
     return intersection / union
 
 
+# --------------------- LANGGRAPH WORKFLOW --------------------- #
+
+async def initialize_state(question_id, candidate_id, candidate_solution):
+    """Initialize the state for the pipeline."""
+    # Connect to the database
+    await connect_to_database.ainvoke("")
+    
+    # Get the question
+    question = await get_question_from_db.ainvoke(question_id)
+    
+    return {
+        "question": question,
+        "llm_solutions": {},
+        "candidate_solution": candidate_solution,
+        "candidate_id": candidate_id,
+        "similarity_scores": {},
+        "status": "initialized",
+        "error": ""
+    }
+
+async def generate_solution(llm, state, llm_name):
+    """Generate code solution using the specified LLM."""
+    question = state["question"]
+    
+    try:
+        chain = code_gen_prompt | llm
+        response = chain.invoke({
+            "question_text": question["text"],
+            "constraints": question.get("constraints", ""),
+            "language": question.get("language", "Python")
+        })
+        
+        solution = response.content
+        state["llm_solutions"][llm_name] = solution
+        
+        # Use ainvoke for async tool
+        solution_data = {
+            "question_id": question["id"],
+            "llm_name": llm_name,
+            "solution": solution,
+            "timestamp": datetime.now().isoformat()
+        }
+        await store_llm_solution.ainvoke(solution_data)
+        
+        return state
+    except Exception as e:
+        state["error"] = f"Error generating solution with {llm_name}: {str(e)}"
+        return state
+
 async def compare_solutions(state):
     """Compare candidate solution with all LLM solutions."""
     similarity_scores = {}
@@ -236,38 +245,17 @@ async def compare_solutions(state):
     
     state["similarity_scores"] = similarity_scores
     
-    # Store comparison results
-    await store_comparison_result({
+    # Use ainvoke for async tool
+    result_data = {
         "question_id": state["question"]["id"],
         "candidate_id": state["candidate_id"],
         "candidate_solution": state["candidate_solution"],
         "similarity_scores": similarity_scores,
         "timestamp": datetime.now().isoformat()
-    })
+    }
+    await store_comparison_result.ainvoke(result_data)
     
     return state
-
-
-# --------------------- LANGGRAPH WORKFLOW --------------------- #
-
-async def initialize_state(question_id, candidate_id, candidate_solution):
-    """Initialize the state for the pipeline."""
-    # Connect to the database
-    await connect_to_database()
-    
-    # Get the question
-    question = await get_question_from_db(question_id)
-    
-    return {
-        "question": question,
-        "llm_solutions": {},
-        "candidate_solution": candidate_solution,
-        "candidate_id": candidate_id,
-        "similarity_scores": {},
-        "status": "initialized",
-        "error": ""
-    }
-
 
 def build_code_comparison_graph():
     """Build the LangGraph workflow for code comparison."""
@@ -277,21 +265,25 @@ def build_code_comparison_graph():
     # Define the graph
     workflow = StateGraph(PipelineState)
     
-    # Add generate solution nodes for each LLM
+    # Add the start node
+    workflow.add_node("start", lambda x: x)
+    
+    # Then add other nodes and edges
     for llm_name, llm in llm_toolkit.items():
         workflow.add_node(f"generate_{llm_name}", lambda state, llm=llm, name=llm_name: generate_solution(llm, state, name))
+        workflow.add_edge("start", f"generate_{llm_name}")
     
     # Add comparison node
     workflow.add_node("compare_solutions", compare_solutions)
     
     # Add disconnect node
-    workflow.add_node("disconnect", lambda state: disconnect_from_database() and state)
+    async def disconnect_node(state):
+        await disconnect_from_database.ainvoke("")
+        return state
+    
+    workflow.add_node("disconnect", disconnect_node)
     
     # Define the edges
-    # From start to all generate nodes
-    for llm_name in llm_toolkit.keys():
-        workflow.add_edge("start", f"generate_{llm_name}")
-    
     # Conditional edge: when all LLM solutions are generated, move to comparison
     def all_solutions_ready(state):
         expected_llms = list(create_llm_toolkit().keys())
@@ -341,9 +333,6 @@ async def run_code_comparison_pipeline(
     # Create the graph
     graph = build_code_comparison_graph()
     
-    # Set up the checkpoint saver
-    saver = SqliteSaver.from_conn_string("sqlite:///pipeline_checkpoints.db")
-    
     # Initialize the state
     initial_state = await initialize_state(
         question_id=question_id,
@@ -351,18 +340,10 @@ async def run_code_comparison_pipeline(
         candidate_solution=candidate_solution
     )
     
-    # Run the graph with checkpointing
-    result = await graph.ainvoke(
-        initial_state,
-        {
-            "configurable": {
-                "checkpoint": saver
-            }
-        }
-    )
+    # Run the graph without checkpointing
+    result = await graph.ainvoke(initial_state)
     
     return result
-
 
 # Example usage
 if __name__ == "__main__":

@@ -1,14 +1,20 @@
+from prisma import Prisma
 import asyncio
-from main import run_code_comparison_pipeline
-async def test_pipeline():
-    # Example usage
-    final_state = await run_code_comparison_pipeline(
-        question_id=1,  # ID of question in your Neon DB
-        candidate_id="candidate123",
-        candidate_solution="def solution(a, b): return a + b"
-    )
-    
-    print("Similarity scores:", final_state["similarity_scores"])
 
-# Run the pipeline
-asyncio.run(test_pipeline())
+async def main() -> None:
+    db = Prisma()
+    await db.connect()
+
+    problem = await db.problem.create(
+        {
+            'text': 'Hello from prisma!',
+            'language': 'Prisma is a database toolkit and makes databases easy.',
+            'constraints': 'hi'
+        }
+    )
+
+    await db.disconnect()
+
+
+if __name__ == '__main__':
+    asyncio.run(main())

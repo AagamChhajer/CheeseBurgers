@@ -1,10 +1,29 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+model Problem {
+  id          Int             @id @default(autoincrement())
+  text        String
+  language    String          @default("Python")
+  constraints String?
+  difficulty  DifficultyLevel @default(MEDIUM)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model Question {
