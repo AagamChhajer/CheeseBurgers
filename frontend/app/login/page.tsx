@@ -14,29 +14,46 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Basic validation
+    if (!username || username.trim().length < 3) {
+        setError('Please enter a valid username');
+        return;
+    }
+
+    if (!password || password.length < 8) {
+        setError('Please enter a valid password');
+        return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                username: username.trim(), 
+                password 
+            }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (data.success) {
-        router.push('/stream');
-      } else {
-        setError(data.message || 'Login failed');
-      }
+        if (!response.ok) {
+            throw new Error(data.message || 'Login failed');
+        }
+
+        if (data.success) {
+            router.push('/stream');
+        }
     } catch (err) {
-      setError('An error occurred. Please try again.');
-      console.error(err);
+        setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
+        console.error(err);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 

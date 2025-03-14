@@ -1,4 +1,4 @@
-'use client';
+        'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,7 +16,17 @@ export default function Signup() {
         e.preventDefault();
         setError('');
 
-        // Validate passwords match
+        // Enhanced input validation
+        if (!username || username.trim().length < 3) {
+            setError('Username must be at least 3 characters long');
+            return;
+        }
+
+        if (!password || password.length < 8) {
+            setError('Password must be at least 8 characters long');
+            return;
+        }
+
         if (password !== confirmPassword) {
             setError('Passwords do not match');
             return;
@@ -30,10 +40,17 @@ export default function Signup() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ 
+                    username: username.trim(),
+                    password 
+                }),
             });
 
             const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Signup failed');
+            }
 
             if (data.success) {
                 // After successful signup, log the user in automatically
@@ -42,7 +59,7 @@ export default function Signup() {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ username, password }),
+                    body: JSON.stringify({ username: username.trim(), password }),
                 });
 
                 const loginData = await loginResponse.json();
@@ -50,13 +67,12 @@ export default function Signup() {
                 if (loginData.success) {
                     router.push('/stream');
                 } else {
+                    setError('Login after signup failed. Please try logging in manually.');
                     router.push('/login');
                 }
-            } else {
-                setError(data.message || 'Signup failed');
             }
         } catch (err) {
-            setError('An error occurred. Please try again.');
+            setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
             console.error(err);
         } finally {
             setLoading(false);
