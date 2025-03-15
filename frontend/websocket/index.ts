@@ -1,6 +1,6 @@
 // websocketServer.ts
 import { WebSocketServer, WebSocket } from 'ws';
-import http from 'http';
+import * as http from 'http';
 import {prisma} from '../prisma/client';
 
 // Create HTTP server
